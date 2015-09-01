@@ -1,0 +1,201 @@
+
+ctype html>
+<html lang="en">
+<head>
+<title>Greg Doolittle - Fibonacci Spirals</title>
+<style>
+body {
+	margin:0;
+	padding: 0;
+}
+input[type=range] {
+    -webkit-appearance: none;
+    background-color: rgba(0,0,0,.4);
+	height:20px;
+    margin-top: 10px;
+    width:100px;
+}
+input[type=range]:focus {
+	outline: none;
+}
+#ui {
+	left:50%;
+	margin-left:-20%;
+	position: absolute;
+	text-align:center;
+	top:0px;
+	width: 40%;
+	background: rgba(122,122,122,.4);
+	padding: 10px 0;
+}
+label {
+	color:#fff;
+	display:inline-block;
+	font-family: sans-serif;
+	padding: 10px;
+	text-align: left;
+}
+</style>
+</head>
+<body></body>
+
+<script>
+// "use strict";
+
+/*
+ * Fibonacci_Swirl.js
+ * @Author Greg Doolittle
+ * description: generates a spiral based on fibonacci's golden ratio.
+ */
+
+
+function Fibonacci() {
+	this.applyURLHash();
+	this.body = document.getElementsByTagName( "body" )[0];
+	this.canvas = document.createElement( "canvas" );
+	this.canvas.width = window.innerWidth;
+	this.canvas.height = window.innerHeight;
+	this.body.appendChild( this.canvas );
+	this.canvas.style.background = "black";
+
+	this.context = this.canvas.getContext( "2d" );
+	this.context.fillStyles = [
+		["#fff", "#aaa", "#666"],
+		["#cc0000", "#ff5f42", "#870006"], //, "#000000"]; // monochrome in red
+		["#00cc00", "#5fff42", "#008706"], //, "#000000"]; // monochrome in green
+		["#0000cc", "#5f42ff", "#000687"], //, "#000000"]; // monochrome in blue
+		["#FF0000", "#00FF00", "#0000FF"], // RGB
+		["#cc0000", "#ffdd11", "#0066bb"], // RYB
+		// ["#a00", "#000", "#fff", "#000"],
+		["#c94134", "#efca49", "#31578c", "#FFF"], // mondrian
+		// ["#f59331", "#3fb34f", "#615ea6"], // OGV, kinda unpleasant
+		["#c94134", "#f59331", "#efca49", "#3fb34f", "#3157cc", "#615ea6"]]; // rainbow
+	this.context.threesixtyRadians = 2 * Math.PI;
+	this.context.lineWidth = localStorage.getItem("fibonacci-swirl-lineWidth") || 16;
+	this.context.arcLength = localStorage.getItem("fibonacci-swirl-arcLength") || 4;
+	var defaultSize = (this.canvas.width < this.canvas.height) ? Math.floor(this.canvas.height/240) : Math.floor(this.canvas.width/240);
+	this.context._size = localStorage.getItem("fibonacci-swirl-size") || 17;
+	this.context._color = localStorage.getItem("fibonacci-swirl-colorChoice") || 6;
+	this.context.reverse = localStorage.getItem("fibonacci-swirl-reverse") || true;
+
+	this.uiContainer = document.createElement( "div" );
+	this.uiContainer.id = "ui";
+	this.body.appendChild( this.uiContainer );
+
+	this.widthUI = new Slider( this.uiContainer, "width", "Width", "setLineWidth", 0, 18, this.context.lineWidth );
+	this.arcUI = new Slider( this.uiContainer, "arcLength", "Arc Length", "setArcLength", 1, 24, this.context.arcLength );
+	this.colorUI = new Slider( this.uiContainer, "color", "Colors", "setColor", 0,  this.context.fillStyles.length-1, this.context._color );
+	this.sizeUI = new Slider( this.uiContainer, "size", "Size/Period", "setSize", 
+		2, 
+		(this.canvas.width < this.canvas.height) ? Math.ceil(this.canvas.height/36) : Math.ceil(this.canvas.width/36), 
+		this.context._size );
+};
+
+Fibonacci.prototype.setLineWidth = function ( val ) {
+	this.context.lineWidth = val;
+	localStorage.setItem("fibonacci-swirl-lineWidth", val);
+	magicCanvas.buildURLHash();
+	// alert( arguments.callee );
+};
+Fibonacci.prototype.setArcLength = function ( val ) {
+	this.context.arcLength = val;
+	localStorage.setItem("fibonacci-swirl-arcLength", val);
+	magicCanvas.buildURLHash();
+};
+Fibonacci.prototype.setColor = function ( val ) {
+	this.context._color = val;
+	localStorage.setItem("fibonacci-swirl-colorChoice", val);
+	magicCanvas.buildURLHash();
+	// magicCanvas.paint();
+};
+Fibonacci.prototype.setSize = function ( val ) {
+	this.context._size = val;
+	localStorage.setItem("fibonacci-swirl-size", val);
+	magicCanvas.buildURLHash();
+};
+Fibonacci.prototype.applyURLHash = function () {
+	var hash = window.location.hash;
+	if (hash.length > 9 ) {
+		var vals = hash.split('/');
+		localStorage.setItem( "fibonacci-swirl-lineWidth", vals[1] );
+		localStorage.setItem( "fibonacci-swirl-arcLength", vals[2] );
+		localStorage.setItem( "fibonacci-swirl-colorChoice", vals[3] );
+		localStorage.setItem( "fibonacci-swirl-size", vals[4] );
+	}
+};
+Fibonacci.prototype.buildURLHash = function () {
+	var newHash = "#/" + this.context.lineWidth + "/" + 
+						this.context.arcLength + "/" + 
+						this.context._color + "/" + 
+						this.context._size + "/";
+	window.location.hash = newHash;
+};
+// Fibonacci.prototype.setDirection = function ( val ) {
+	// this.context.reverse = !!!this.context.reverse;
+	// localStorage.setItem("fibonacci-swirl-colorChoice", val);
+// };
+
+Fibonacci.prototype.paint = function () {
+	this.context.clearRect( 0, 0, this.canvas.width, this.canvas.height );
+	var fib = 1.6180339;
+	this.context.beginPath();
+	var i = 0;
+	var limit = (this.canvas.width < this.canvas.height) ? this.context._size / 10 * this.canvas.width/2 - 50 : this.context._size / 10 * this.canvas.height/2 - 50;
+	var start, end;
+	if ( this.context.reverse === true) {
+			start = scene / this.context.threesixtyRadians + i / this.context.threesixtyRadians; // starting angle
+			end = scene / this.context.threesixtyRadians + i / this.context.threesixtyRadians - ( this.context.arcLength / 10 ) / this.context.threesixtyRadians; // ending angle
+	} else {
+			start = scene / this.context.threesixtyRadians + i / this.context.threesixtyRadians - ( this.context.arcLength / 10 ) / this.context.threesixtyRadians; // ending angle
+			end = scene / this.context.threesixtyRadians + i / this.context.threesixtyRadians; // starting angle
+	}
+
+	for ( i; i < limit; i += 12 ) {
+		this.context.strokeStyle = this.context.fillStyles[this.context._color][ (scene) % this.context.fillStyles[this.context._color].length ];
+		this.context.beginPath();
+		this.context.arc( 
+			this.canvas.width / 2, // x
+			this.canvas.height / 2, // y
+			i+this.context._size/this.context.threesixtyRadians, // radius
+			scene / this.context.threesixtyRadians + i / this.context.threesixtyRadians, // starting angle
+			scene / this.context.threesixtyRadians + i / this.context.threesixtyRadians - ( this.context.arcLength / 10 ) / this.context.threesixtyRadians, // ending angle
+			this.context.reverse
+		);
+		this.context.stroke();
+		scene++;
+	}
+
+};
+
+function Slider( parent, id, label, action, min, max, value ) {
+	this[ id + "Label" ] = document.createElement( "label" );
+	this[ id + "Label" ].id = id+"Label";
+	this[ id + "Label" ].setAttribute("for", id );
+	parent.appendChild( this[ id + "Label" ] );
+	document.getElementById( this[ id + "Label" ].id ).innerHTML = label + ": <br />";
+	this[ id + "Slider" ] = document.createElement( "input" );
+	this[ id + "Slider" ].id = id + "Slider";
+	this[ id + "Slider" ].setAttribute( "type", "range" );
+	this[ id + "Slider" ].setAttribute( "min", min );
+	this[ id + "Slider" ].setAttribute( "max", max );
+	this[ id + "Slider" ].setAttribute( "value", value );
+	this[ id + "Label" ].appendChild( this[ id + "Slider" ] );
+	document.getElementById( this[ id + "Slider" ].id ).addEventListener( "input", function () {
+		magicCanvas[action]( this.value );
+	});
+}
+
+var scene = 0;
+var magicCanvas = new Fibonacci();
+// var forever = setInterval(function() {
+function animate() {
+requestAnimationFrame(animate);
+magicCanvas.paint(scene);
+}
+animate();
+// ;
+// }, 1000/60);
+
+</script>
+
+</html>
